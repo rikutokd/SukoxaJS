@@ -61,8 +61,6 @@ client.on('messageCreate', async message => {
     const receiver = connection.receiver;
 
     receiver.speaking.on('start', (userId) => {
-        console.log('user : ' + userId + ' is speaking');
-        
         // Create a recognize stream
         const recognizeStream = speechClient
           .streamingRecognize(request)
@@ -83,7 +81,7 @@ client.on('messageCreate', async message => {
             threshold: 0,
             // Other options, see https://www.npmjs.com/package/node-record-lpcm16#options
             verbose: false,
-            recordProgram: 'rec', // Try also "arecord" or "sox"
+            recordProgram: 'sox', // Try also "arecord" or "sox"
             silence: '10.0',
           })
           .stream()
