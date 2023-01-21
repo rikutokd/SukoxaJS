@@ -11,18 +11,46 @@ const client = new Client ({
 
 require('dotenv/config')
 
-const ytdl = require('ytdl-core');
+const { Player, QueryType } = require("discord-player");
+const myPlayer = new Player(client);
 
-var Youtube = require('youtube-node');
-var youtube = new Youtube();
+const SpotifyWebApi = require('spotify-web-api-node');
+const express = require('express');
+const app = express();
 
-var limit = 3;
+const refreshToken = process.env.refreshToken;
+const clientId = process.env.clientId;
+const clientSecret = process.env.clientSecret;
+const redirectUri =  process.env.redirectUri;
 
-var items;
-var item;
-var title;
-var id;
-var URL;
+const spotifyApi = new SpotifyWebApi({
+  refreshToken: refreshToken,
+  clientId: clientId,
+  clientSecret: clientSecret,
+  redirectUri: redirectUri
+});
+
+var scopes = [
+  'ugc-image-upload',
+  'user-read-playback-state',
+  'user-modify-playback-state',
+  'user-read-currently-playing',
+  'streaming',
+  'app-remote-control',
+  'user-read-email',
+  'user-read-private',
+  'playlist-read-collaborative',
+  'playlist-modify-public',
+  'playlist-read-private',
+  'playlist-modify-private',
+  'user-library-modify',
+  'user-library-read',
+  'user-top-read',
+  'user-read-playback-position',
+  'user-read-recently-played',
+  'user-follow-read',
+  'user-follow-modify'
+];
 
 const { joinVoiceChannel, entersState, VoiceConnectionStatus, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, generateDependencyReport, getVoiceConnection} = require("@discordjs/voice");
 
@@ -52,6 +80,61 @@ const request = {
 
 client.on('ready', () => {
   console.log('Sukoxa is ready')
+  
+  app.get('/login', (req, res) => {
+    res.redirect(spotifyApi.createAuthorizeURL(scopes));
+  });
+  
+  app.get('/callback', (req, res) => {
+    const error = req.query.error;
+    const code = req.query.code;
+    const state = req.query.state;
+  
+    if (error) {
+      console.error('Callback Error:', error);
+      res.send(`Callback Error: ${error}`);
+      return;
+    }
+  
+    spotifyApi
+      .authorizationCodeGrant(code)
+      .then(data => {
+        const access_token = data.body['access_token'];
+        const refresh_token = data.body['refresh_token'];
+        const expires_in = data.body['expires_in'];
+  
+        spotifyApi.setAccessToken(access_token);
+        spotifyApi.setRefreshToken(refresh_token);
+  
+        console.log('access_token:', access_token);
+        console.log('refresh_token:', refresh_token);
+  
+        console.log(
+          `Sucessfully retreived access token. Expires in ${expires_in} s.`
+        );
+        res.send('Success! You can now close the window.');
+  
+        setInterval(async () => {
+          const data = await spotifyApi.refreshAccessToken();
+          const access_token = data.body['access_token'];
+  
+          console.log('The access token has been refreshed!');
+          console.log('access_token:', access_token);
+          spotifyApi.setAccessToken(access_token);
+        }, expires_in / 2 * 1000);
+      })
+      .catch(error => {
+        console.error('Error getting Tokens:', error);
+        res.send(`Error getting Tokens: ${error}`);
+      });
+  });
+  
+  app.listen(8888, () =>
+    console.log(
+      'HTTP Server up. Now go to http://localhost:8888/login in your browser.'
+    )
+  );
+
 })
 
 client.on('messageCreate', async message => {
@@ -95,55 +178,23 @@ client.on('messageCreate', async message => {
               for (let i = 0; i < suffix.length; i++) {
                 stdoutText = stdoutText.replace(suffix[i],'');
               }
-            
-              console.log(stdoutText)
 
-              youtube.setKey(process.env.ytAPIKey);
+              spotifyApi.searchTracks(stdoutText)
+              .then(function(data){
+                let t = data.body.tracks.items[0]['uri'].replace('spotify:track:', '');
+                let playURL = 'https://open.spotify.com/track/' + t;
 
-              youtube.addParam('order', 'viewCount');
-              youtube.addParam('type', 'video');
-              youtube.addParam('regionCode', 'JP');
-
-              const urls = [];
-
-              youtube.search(stdoutText, limit, function(err, result) {
-                if (err) { console.log(err); return; }
-                items = result["items"];
-                for (var i in items) {
-                    item = items[i];
-                    title = item["snippet"]["title"];
-                    id = item["id"]["videoId"];
-                    URL = "https://www.youtube.com/watch?v=" + id;
-    
-                    console.log("title : " + title);
-                    console.log("URL : " + URL);
-                    console.log("-------------------------------");
-
-                    urls.push(URL);
-                }
-
-                console.log(urls[0])
+                console.log(playURL);
 
                 const player = createAudioPlayer();
                 connection.subscribe(player);
-  
-                const stream = ytdl(ytdl.getURLVideoID(urls[0]), {
-                  filter: format => format.audioCodec === 'opus' && format.container === 'webm', //webm opus
-                  quality: 'highest',
-                  highWaterMark: 32 * 1024 * 1024, // https://github.com/fent/node-ytdl-core/issues/902
-                });
-  
-                const resource = createAudioResource(stream, {
-                  inputType: StreamType.WebmOpus
-                });
-  
-                // 再生
+
+                const resource = createAudioResource(playURL);
+                
                 player.play(resource);
 
               })
-
             }
-
           });
 
         // Start recording and send the microphone input to the Speech API.
