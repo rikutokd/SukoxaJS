@@ -14,15 +14,16 @@ require('dotenv/config')
 const ytdl = require('ytdl-core');
 
 var Youtube = require('youtube-node');
-var youtube = new Youtube();
 
-var limit = 3;
+var limit = 1;
 
 var items;
 var item;
 var title;
 var id;
 var URL;
+
+let isPlaying = false;
 
 const { joinVoiceChannel, entersState, VoiceConnectionStatus, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, generateDependencyReport, getVoiceConnection} = require("@discordjs/voice");
 
@@ -74,6 +75,9 @@ client.on('messageCreate', async message => {
     const receiver = connection.receiver;
 
     receiver.speaking.on('start', (userId) => {
+      if(isPlaying == true) {
+        return
+      }
         // Create a recognize stream
         const recognizeStream = speechClient
           .streamingRecognize(request)
@@ -108,8 +112,10 @@ client.on('messageCreate', async message => {
               });
 
               if (result == true) {
+                recognizeStream.end();
                 console.log('検索値 : ' + stdoutText);
 
+                var youtube = new Youtube();
                 youtube.setKey(process.env.ytAPIKey);
 
                 youtube.addParam('order', 'viewCount');
@@ -136,7 +142,7 @@ client.on('messageCreate', async message => {
 
                   console.log(urls[0])
 
-                  const player = createAudioPlayer();
+                  const player = createAudioPlayer();     
                   connection.subscribe(player);
     
                   const stream = ytdl(ytdl.getURLVideoID(urls[0]), {
@@ -151,7 +157,14 @@ client.on('messageCreate', async message => {
     
                   // 再生
                   player.play(resource);
-                  result = null;
+                  player.on(AudioPlayerStatus.Playing, () => {
+                    console.log('Sukoxa has started playing!');
+                    isPlaying = true;
+                  });
+                  player.on(AudioPlayerStatus.Idle, () => {
+                    console.log('Sukoxa is idle.');
+                    isPlaying = false;
+                  });
                 })
               }else if(result == false){
                 console.log('検索しません')
@@ -181,8 +194,12 @@ client.on('messageCreate', async message => {
 })
 
 client.on('messageCreate', message => {
-  if(message.content === '!js') {
-    message.reply('jsだよ')
+  if(message.content === '!shelp') {
+    message.reply('!sjoin : ボイスチャンネルに参加して再生したい曲のタイトルを聞く状態になるよ。「誰誰の△△」だと尚、流したい曲が流せる' + "\n"
+    + '！注意 音楽再生中は音声認識が止まっているよ' + "\n"
+    + '再生が終わると自動でタイトルを聞く状態になるよ' + "\n"
+    + 'ボイスチャンネルから蹴りたい時は、テキストチャンネルで !sleave もしくは　「スコッサ　失せろorバイバイ」'
+    )
   }
 })
 
@@ -199,3 +216,7 @@ client.on('messageCreate', message => {
 })
 
 client.login(process.env.TOKEN)
+
+setInterval(() => {
+  console.log('isPlaying : ' + isPlaying);
+}, 10000);
