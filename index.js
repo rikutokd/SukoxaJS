@@ -1,5 +1,20 @@
 const { Client, GatewayIntentBits } = require('discord.js')
 
+const express = require('express');
+const app = express();
+
+app.get('/_ah/warmup', (req, res) => {
+    // Handle your warmup logic. Initiate db connection, etc.
+    res.sendStatus(0);
+});
+
+// Rest of your application handlers.
+app.get('/', (_req, res) => {
+  res.send('Sukoxa is running!');
+});
+app.listen(8080);
+
+
 const client = new Client ({
   intents: [
     GatewayIntentBits.Guilds,
