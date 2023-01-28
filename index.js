@@ -5,7 +5,7 @@ const app = express();
 
 app.get('/_ah/warmup', (req, res) => {
     // Handle your warmup logic. Initiate db connection, etc.
-    res.sendStatus(0);
+    res.sendStatus(200);
 });
 
 // Rest of your application handlers.
@@ -181,7 +181,9 @@ function startRecognizeStream(guild,connection) {
     )
 
     if (data.results[0] && data.results[0].alternatives[0]) {
-      let stdoutText = data.results[0].alternatives[0].transcript;
+      //音声認識が継続した場合を考慮して、最新の認識結果のみを取得
+      let i = data.results.length;
+      let stdoutText = data.results[i].alternatives[0].transcript;
 
       console.dir(stdoutText, { depth: null });
 
