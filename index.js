@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits } = require('discord.js')
+const { exec } = require('child_process')
 
 const express = require('express');
 const app = express();
@@ -165,6 +166,8 @@ setInterval(() => {
 }, 10000);
 
 function startRecognizeStream(guild,connection) {
+  exec('parecord -d 1 test.wav')
+  
   if(isPlaying == true) {
     return
   }
@@ -283,6 +286,7 @@ function startRecognizeStream(guild,connection) {
       verbose: false,
       recordProgram: 'sox', // Try also "arecord" or "sox"
       silence: '10.0',
+      audioType: 'pulseaudio',
     })
     .stream()
     .on('error', console.error)
