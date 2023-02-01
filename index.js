@@ -284,7 +284,6 @@ if(isPlaying == true) {
       verbose: false,
       recordProgram: 'rec', // Try also "arecord" or "sox"
       silence: '10.0',
-      audioType: 'pulseaudio',
     })
     .stream()
     .on('error', console.error)
