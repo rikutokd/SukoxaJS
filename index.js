@@ -163,13 +163,10 @@ client.login(process.env.TOKEN)
 
 setInterval(() => {
   console.log('isPlaying : ' + isPlaying);
-  console.log(exec('paplay -d 1 test.wav'))
 }, 10000);
 
 function startRecognizeStream(guild,connection) {
-  exec('parecord -d 1 test.wav')
-  
-  if(isPlaying == true) {
+if(isPlaying == true) {
     return
   }
 
@@ -285,7 +282,7 @@ function startRecognizeStream(guild,connection) {
       threshold: 0,
       // Other options, see https://www.npmjs.com/package/node-record-lpcm16#options
       verbose: false,
-      recordProgram: 'sox', // Try also "arecord" or "sox"
+      recordProgram: 'rec', // Try also "arecord" or "sox"
       silence: '10.0',
       audioType: 'pulseaudio',
     })
