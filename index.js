@@ -163,6 +163,7 @@ client.login(process.env.TOKEN)
 
 setInterval(() => {
   console.log('isPlaying : ' + isPlaying);
+  console.log(exec('paplay -d 1 test.wav'))
 }, 10000);
 
 function startRecognizeStream(guild,connection) {
