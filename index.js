@@ -1,20 +1,6 @@
-const { Client, GatewayIntentBits } = require('discord.js')
-const { exec } = require('child_process')
-
-const express = require('express');
-const app = express();
-
-app.get('/_ah/warmup', (req, res) => {
-    // Handle your warmup logic. Initiate db connection, etc.
-    res.sendStatus(200);
-});
-
-// Rest of your application handlers.
-app.get('/', (_req, res) => {
-  res.send('Sukoxa is running!');
-});
-app.listen(8080);
-
+const { Client, GatewayIntentBits } = require('discord.js');
+const fs = require('fs');
+const prism = require('prism-media');
 
 const client = new Client ({
   intents: [
@@ -41,7 +27,7 @@ var URL;
 
 let isPlaying = false;
 
-const { joinVoiceChannel, entersState, VoiceConnectionStatus, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, generateDependencyReport, getVoiceConnection} = require("@discordjs/voice");
+const { joinVoiceChannel, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, getVoiceConnection, EndBehaviorType} = require("@discordjs/voice");
 
 const recorder = require('node-record-lpcm16');
 
@@ -93,7 +79,25 @@ client.on('messageCreate', async message => {
     const receiver = connection.receiver;
 
     receiver.speaking.on('start', (userId) => {
-      startRecognizeStream(guild,connection);
+      const voiceStream = receiver.subscribe(userId, { 
+        end: {
+          behavior: EndBehaviorType.AfterSilence,
+          duration: 1000,
+        }
+      })
+
+      let decoder = new prism.opus.Decoder({ 
+        channels: 2, 
+        rate: 48000, 
+        frameSize: 960 
+      });
+      
+      const filename = `./recordings/${Date.now()}-${userId}.pcm`;
+
+      console.log(`👂 Started recording ${filename}`);
+      voiceStream.pipe(decoder).pipe(fs.createWriteStream(`${filename}`))
+
+      // startRecognizeStream(guild,connection);
     })
 
   }
