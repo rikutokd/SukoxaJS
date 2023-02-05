@@ -144,9 +144,9 @@ setInterval(() => {
 }, 20000);
 
 // exit時
-process.on("exit", function() {
-  exec('npm start')
-});
+// process.on("exit", function() {
+//   exec('npm start')
+// });
 
 
 async function startRecognizeStream(guild, connection, userId) {
