@@ -27,6 +27,8 @@ var title;
 var id;
 var URL;
 
+let isPlaying = false;
+
 const { joinVoiceChannel, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, getVoiceConnection, EndBehaviorType} = require("@discordjs/voice");
 
 // Imports the Google Cloud client library
@@ -68,6 +70,7 @@ client.on('messageCreate', message => {
     const receiver = connection.receiver;
 
     receiver.speaking.on('start', (userId) => {
+      
       startRecognizeStream(guild, connection, userId);
     })
 
@@ -105,7 +108,8 @@ client.on('messageCreate', message => {
     if(!vc) {
       return message.reply('ボイスチャンネルに参加してないよ');
     }
-    if(AudioPlayerStatus.Idle || AudioPlayerStatus.AutoPaused || AudioPlayerStatus.Paused){
+
+    if(isPlaying == false){
       console.log('再生中じゃないよ');
       return
     }
@@ -121,6 +125,7 @@ client.on('messageCreate', message => {
     const player = createAudioPlayer();
     connection.subscribe(player);  
     player.stop();
+    isPlaying = false;
 
     const receiver = connection.receiver;
 
@@ -131,12 +136,24 @@ client.on('messageCreate', message => {
   }
 })
 
+
 client.login(process.env.TOKEN)
 
+setInterval(() => {
+  console.log('isPlaying : ' + isPlaying);
+}, 20000);
+
+// exit時
+// process.on("exit", function() {
+//   exec('npm start')
+// });
+
+
 async function startRecognizeStream(guild, connection, userId) {
-  if(AudioPlayerStatus.Playing){
-    return
-  }
+  if(isPlaying == true) {
+      return
+    }
+
   const receiver = connection.receiver;
 
   await fs.promises.mkdir('./recordings', { recursive: true })
@@ -255,9 +272,11 @@ async function startRecognizeStream(guild, connection, userId) {
               player.play(resource);
               player.on(AudioPlayerStatus.Playing, () => {
                 console.log('Sukoxa has started playing!');
+                isPlaying = true;
               });
               player.on(AudioPlayerStatus.Idle, () => {
                 console.log('Sukoxa is idle.');
+                isPlaying = false;
               });
             })
           }else if(result == false){
