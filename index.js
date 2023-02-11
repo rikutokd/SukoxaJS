@@ -105,10 +105,6 @@ client.on('messageCreate', message => {
     if(!vc) {
       return message.reply('ボイスチャンネルに参加してないよ');
     }
-    if(AudioPlayerStatus.Idle || AudioPlayerStatus.AutoPaused || AudioPlayerStatus.Paused){
-      console.log('再生中じゃないよ');
-      return
-    }
 
     const connection = joinVoiceChannel({
       guildId: guild.id,
@@ -120,6 +116,12 @@ client.on('messageCreate', message => {
 
     const player = createAudioPlayer();
     connection.subscribe(player);  
+
+    player.on(AudioPlayerStatus.Idle || AudioPlayerStatus.AutoPaused || AudioPlayerStatus.Paused, () => {
+      console.log('再生中じゃないよ');
+      return
+    });
+
     player.stop();
 
     const receiver = connection.receiver;
@@ -134,9 +136,13 @@ client.on('messageCreate', message => {
 client.login(process.env.TOKEN)
 
 async function startRecognizeStream(guild, connection, userId) {
-  if(AudioPlayerStatus.Playing){
+  const player = createAudioPlayer();
+  connection.subscribe(player);
+  player.on(AudioPlayerStatus.Playing, () => {
+    console.log('play中です')
     return
-  }
+  });
+
   const receiver = connection.receiver;
 
   await fs.promises.mkdir('./recordings', { recursive: true })
