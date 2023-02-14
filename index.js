@@ -27,7 +27,7 @@ var title;
 var id;
 var URL;
 
-let isPlaying = false;
+let isPlaying = [];
 
 const { joinVoiceChannel, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, getVoiceConnection, EndBehaviorType} = require("@discordjs/voice");
 
@@ -79,9 +79,9 @@ client.on('messageCreate', message => {
 
 client.on('messageCreate', message => {
   if(message.content === '!shelp') {
-    message.reply('!sjoin : ボイスチャンネルに参加して再生したい曲のタイトルを聞く状態になるよ。「誰誰の△△」だと尚、流したい曲が流せる' + "\n"
+    message.reply('!sjoin : ボイスチャンネルに参加して再生したい曲のタイトルを聞く状態になるよ。「誰誰の△△かけて」だと尚、流したい曲が流せる' + "\n"
     + '⚠️ 音楽再生中は音声認識が止まっているよ ⚠️' + "\n"
-    + '曲を止めるか再生が終わると自動でタイトルを聞く状態になるよ' + "\n" + "\n"
+    + '曲を止めるか再生が終わると自動でタイトルを聞く状態になる' + "\n" + "\n"
     + 'ボイスチャンネルから蹴る: !sleave or 「(スコッサ) ディスコネクト」って言う' + "\n"
     + '曲を止めたい時: !stop'
     )
@@ -94,6 +94,11 @@ client.on('messageCreate', message => {
 
     if(!vc) {
       return message.reply('ボイスチャンネルに参加してないよ');
+    }
+
+    const index = isPlaying.indexOf(guild.id);
+    if(index != -1){
+      isPlaying.splice(index, 1)
     }
 
     getVoiceConnection(message.guild.id).destroy();
@@ -109,7 +114,8 @@ client.on('messageCreate', message => {
       return message.reply('ボイスチャンネルに参加してないよ');
     }
 
-    if(isPlaying == false){
+    const index = isPlaying.indexOf(guild.id);
+    if(index == -1){
       console.log('再生中じゃないよ');
       return
     }
@@ -125,7 +131,9 @@ client.on('messageCreate', message => {
     const player = createAudioPlayer();
     connection.subscribe(player);  
     player.stop();
-    isPlaying = false;
+    if(index != -1){
+      isPlaying.splice(index, 1)
+    }
 
     const receiver = connection.receiver;
 
@@ -141,18 +149,15 @@ client.login(process.env.TOKEN)
 
 setInterval(() => {
   console.log('isPlaying : ' + isPlaying);
-}, 20000);
-
-// exit時
-// process.on("exit", function() {
-//   exec('npm start')
-// });
+}, 15000);
 
 
 async function startRecognizeStream(guild, connection, userId) {
-  if(isPlaying == true) {
-      return
-    }
+  const index = isPlaying.indexOf(guild.id);
+  if(index != -1){
+    console.log(guild.id+"は再生中の為、音声認識しません")
+    return
+  }
 
   const receiver = connection.receiver;
 
@@ -207,7 +212,7 @@ async function startRecognizeStream(guild, connection, userId) {
             getVoiceConnection(guild.id).destroy();
           }
     
-          const suffix = ['かけて','流して','聞かせて','ながして'];
+          const suffix = ['かけて','かけ','流して','流し','聞かせて','聞かせ','ながして','ながし'];
     
           var array = [];
     
@@ -272,11 +277,14 @@ async function startRecognizeStream(guild, connection, userId) {
               player.play(resource);
               player.on(AudioPlayerStatus.Playing, () => {
                 console.log('Sukoxa has started playing!');
-                isPlaying = true;
+                isPlaying.push(guild.id);
               });
               player.on(AudioPlayerStatus.Idle, () => {
                 console.log('Sukoxa is idle.');
-                isPlaying = false;
+                const index = isPlaying.indexOf(guild.id);
+                if(index != -1){
+                  isPlaying.splice(index, 1)
+                }
               });
             })
           }else if(result == false){
