@@ -237,10 +237,11 @@ async function startRecognizeStream(guild, connection, userId) {
             var youtube = new Youtube();
             youtube.setKey(process.env.ytAPIKey);
     
-            youtube.addParam('order', 'relevance');
+            youtube.addParam('order', 'videoCount');
             youtube.addParam('type', 'video');
             youtube.addParam('regionCode', 'JP');
             youtube.addParam('videoCategoryId', '10');
+            youtube.addParam('videoDuration', 'short');
     
             youtube.search(stdoutText, limit, function(err, result) {
               if (err) { console.log(err); return; }
