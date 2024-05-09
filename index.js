@@ -237,7 +237,7 @@ async function startRecognizeStream(guild, connection, userId) {
             var youtube = new Youtube();
             youtube.setKey(process.env.ytAPIKey);
     
-            youtube.addParam('order', 'viewCount');
+            youtube.addParam('order', 'relevance');
             youtube.addParam('type', 'video');
             youtube.addParam('regionCode', 'JP');
             youtube.addParam('videoCategoryId', '10');
