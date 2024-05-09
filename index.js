@@ -240,6 +240,7 @@ async function startRecognizeStream(guild, connection, userId) {
             youtube.addParam('order', 'viewCount');
             youtube.addParam('type', 'video');
             youtube.addParam('regionCode', 'JP');
+            youtube.addParam('videoCategoryId', '10');
     
             youtube.search(stdoutText, limit, function(err, result) {
               if (err) { console.log(err); return; }
